@@ -76,7 +76,7 @@ function Dashboard({ user }: { user: User }) {
         <main className="mx-auto max-w-4xl px-5 py-8">
           <section className="card relative mb-8 overflow-hidden p-6 sm:p-8">
             <div className="absolute -right-6 -top-6 size-40 rounded-full bg-brand-100" aria-hidden />
-            <Sprout className="absolute right-6 top-4 size-20 sm:right-10 sm:size-24" />
+            <Sprout className="absolute right-6 top-4 h-24 sm:right-10 sm:h-28" />
             <p className="relative text-xl font-extrabold leading-snug text-cocoa-900 sm:text-2xl">
               안녕하세요, {name}님!
               <br />

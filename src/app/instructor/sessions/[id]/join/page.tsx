@@ -2,6 +2,7 @@
 
 import { use, useEffect, useState } from "react";
 import type { User } from "firebase/auth";
+import { FitOneLine } from "@/components/FitOneLine";
 import { InstructorGate } from "@/components/InstructorGate";
 import { FullMessage, Logo, QrImage, Sprout } from "@/components/ui";
 import { directLink, siteHost } from "@/lib/firebase-client";
@@ -54,18 +55,14 @@ function Projector({ id, user }: { id: string; user: User }) {
       )}
 
       <div className="flex flex-col items-center text-center">
-        <div className="[&_svg]:size-[clamp(3.5rem,7vw,7rem)] [&_span]:text-[clamp(2rem,4.5vw,4.5rem)]">
-          <Logo size="xl" stacked href={null} />
-        </div>
+        <Logo size="xl" href={null} />
         <p className="mt-[1.5vh] text-[clamp(1.1rem,2vw,2rem)] font-bold text-cocoa-700">{session.title}</p>
       </div>
 
       <div className="mt-[3vh] flex w-full max-w-[1500px] flex-1 flex-wrap items-center justify-center gap-[3vw]">
         <div className="card min-w-0 flex-1 basis-[560px] px-[3vw] py-[4vh]">
           <Step n={1}>노트북에서 접속하세요</Step>
-          <p className="mt-[1vh] break-all text-center font-extrabold leading-tight tracking-tight text-brand-600 text-[clamp(2.75rem,7.5vw,8.5rem)]">
-            {host}
-          </p>
+          <FitOneLine text={host} maxRem={8.5} className="mt-[1vh] text-center font-extrabold leading-tight tracking-tight text-brand-600" />
 
           <hr className="my-[3vh] border-line" />
 
@@ -92,7 +89,7 @@ function Projector({ id, user }: { id: string; user: User }) {
 
       <p className="mt-[3vh] flex items-center gap-2 text-center font-hand text-[clamp(1.6rem,2.6vw,2.8rem)] leading-tight text-cocoa-700">
         ‘배움이 연결되는 순간, 링크피움과 함께하세요!’
-        <Sprout className="size-[1.2em]" />
+        <Sprout className="h-[1.4em]" />
       </p>
     </main>
   );

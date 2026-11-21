@@ -5,34 +5,57 @@ import Link from "next/link";
 import QRCode from "qrcode";
 import { STATUS_LABEL, type SessionStatus } from "@/lib/shared";
 
-/** 시안의 새싹 심볼 */
-export function Sprout({ className = "size-8" }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 64 64" className={className} aria-hidden>
-      <path d="M31 58c0-12 .5-22 1-30" stroke="#3f8f2a" strokeWidth="4.5" strokeLinecap="round" fill="none" />
-      <path d="M31.5 30C30 17 20 9 5 11c1 14 11 22 26.5 19z" fill="#5cb83a" />
-      <path d="M31.5 30C30 17 20 9 5 11c9 3 18 10 26.5 19z" fill="#43982a" />
-      <path d="M32.5 28C34 15 44 7 59 9c-1 14-11 22-26.5 19z" fill="#7ccf4f" />
-      <path d="M32.5 28C34 15 44 7 59 9c-9 3-18 10-26.5 19z" fill="#5cb83a" />
-    </svg>
-  );
+/*
+ * 브랜드 로고 이미지 (public/brand). 원본 로고.png 에서 흰 배경을 투명하게 만들어 잘라낸 것.
+ *  logo-full.png     심볼 + 링크피움 + LinkPium (세로형)   640x710
+ *  logo-symbol.png   링크-새싹 심볼만                       256x304
+ *  logo-wordmark.png 링크피움 + LinkPium 글자만             480x187
+ */
+const BRAND = {
+  full: { src: "/brand/logo-full.png", w: 640, h: 710 },
+  symbol: { src: "/brand/logo-symbol.png", w: 256, h: 304 },
+  wordmark: { src: "/brand/logo-wordmark.png", w: 480, h: 187 },
+};
+
+/** 링크-새싹 심볼 (장식용) */
+export function Sprout({ className = "h-8" }: { className?: string }) {
+  // eslint-disable-next-line @next/next/no-img-element
+  return <img src={BRAND.symbol.src} width={BRAND.symbol.w} height={BRAND.symbol.h} alt="" aria-hidden className={`w-auto object-contain ${className}`} />;
 }
 
-export function Logo({ size = "md", href = "/", stacked = false }: { size?: "md" | "lg" | "xl"; href?: string | null; stacked?: boolean }) {
-  const sym = { md: "size-8", lg: "size-11", xl: "size-20" }[size];
-  const word = { md: "text-lg", lg: "text-2xl", xl: "text-5xl" }[size];
-  const sub = { md: "text-[10px]", lg: "text-xs", xl: "text-xl" }[size];
-  const inner = (
-    <span className={`inline-flex items-center font-extrabold tracking-tight text-cocoa-900 ${stacked ? "flex-col gap-0.5" : "gap-2"}`}>
-      <Sprout className={sym} />
-      <span className={`flex flex-col leading-none ${stacked ? "items-center" : ""}`}>
-        <span className={word}>링크피움</span>
-        <span className={`${sub} mt-0.5 font-semibold text-cocoa-700`}>(LinkPium)</span>
-      </span>
+/**
+ * 로고. stacked=세로형 전체 로고, 아니면 심볼 + 글자 가로형(헤더용).
+ * className 으로 높이(h-*)를 직접 지정할 수 있다.
+ */
+export function Logo({
+  size = "md",
+  href = "/",
+  stacked = false,
+  className,
+}: {
+  size?: "md" | "lg" | "xl";
+  href?: string | null;
+  stacked?: boolean;
+  className?: string;
+}) {
+  /* eslint-disable @next/next/no-img-element */
+  const inner = stacked ? (
+    <img
+      src={BRAND.full.src}
+      width={BRAND.full.w}
+      height={BRAND.full.h}
+      alt="링크피움 LinkPium"
+      className={`w-auto ${className ?? { md: "h-20", lg: "h-32", xl: "h-52 sm:h-60" }[size]}`}
+    />
+  ) : (
+    <span className={`inline-flex items-center gap-1.5 ${className ?? ""}`}>
+      <img src={BRAND.symbol.src} width={BRAND.symbol.w} height={BRAND.symbol.h} alt="" aria-hidden className={`w-auto ${{ md: "h-10", lg: "h-12", xl: "h-20" }[size]}`} />
+      <img src={BRAND.wordmark.src} width={BRAND.wordmark.w} height={BRAND.wordmark.h} alt="링크피움 LinkPium" className={`w-auto ${{ md: "h-8", lg: "h-10", xl: "h-16" }[size]}`} />
     </span>
   );
+  /* eslint-enable @next/next/no-img-element */
   return href ? (
-    <Link href={href} className="rounded-lg" aria-label="링크피움 홈">
+    <Link href={href} className="inline-flex rounded-lg" aria-label="링크피움 홈">
       {inner}
     </Link>
   ) : (
