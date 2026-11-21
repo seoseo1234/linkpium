@@ -17,7 +17,7 @@ type LimitDoc = { failures: number; windowStart: Timestamp };
 export function clientKey(req: Request): string {
   const fwd = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
   const ip = fwd || req.headers.get("x-real-ip") || "unknown";
-  const salt = process.env.RATE_LIMIT_SALT ?? "linkpeum";
+  const salt = process.env.RATE_LIMIT_SALT ?? "linkpium";
   return createHash("sha256").update(salt + ip).digest("hex").slice(0, 32);
 }
 
