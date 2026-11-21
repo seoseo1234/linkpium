@@ -105,7 +105,7 @@ function Board({ token }: { token: string }) {
     );
 
   return (
-    <div className="min-h-dvh">
+    <div className="warm-blobs min-h-dvh">
       <header className="sticky top-0 z-20 border-b border-line bg-surface/90 backdrop-blur">
         <div className="mx-auto flex max-w-3xl items-center gap-3 px-4 py-3">
           <Logo />
@@ -117,7 +117,7 @@ function Board({ token }: { token: string }) {
 
       {toast && (
         <div role="status" aria-live="polite" className="fixed inset-x-0 top-16 z-30 flex justify-center px-4">
-          <div className="animate-bloom max-w-xl truncate rounded-full bg-ink px-5 py-2.5 text-sm font-semibold text-white shadow-lg">
+          <div className="animate-bloom max-w-xl truncate rounded-full bg-cocoa-900 px-5 py-2.5 text-sm font-bold text-brand-200 shadow-lg">
             ✿ {toast}
           </div>
         </div>
@@ -127,7 +127,7 @@ function Board({ token }: { token: string }) {
         <div className="fixed inset-x-0 top-28 z-30 flex justify-center">
           <button
             type="button"
-            className="animate-bloom rounded-full bg-bloom-500 px-5 py-2.5 text-sm font-bold text-white shadow-lg hover:bg-bloom-400"
+            className="animate-bloom rounded-full bg-brand-400 px-5 py-2.5 text-sm font-bold text-cocoa-900 shadow-lg hover:bg-brand-500"
             onClick={() => {
               window.scrollTo({ top: 0, behavior: "smooth" });
               setUnseenBelow(0);
@@ -145,7 +145,7 @@ function Board({ token }: { token: string }) {
           <>
             <section className="mb-6">
               {board.status === "ended" && (
-                <p className="mb-3 rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-800">종료된 강의입니다. 공개된 자료는 계속 볼 수 있어요.</p>
+                <p className="mb-3 rounded-xl bg-stone-100 px-3 py-2 text-sm font-semibold text-stone-600">종료된 강의입니다. 공개된 자료는 계속 볼 수 있어요.</p>
               )}
               <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">{board.title}</h1>
               {board.description && <p className="mt-1 whitespace-pre-wrap text-ink-muted">{board.description}</p>}
@@ -154,7 +154,7 @@ function Board({ token }: { token: string }) {
                   href={board.driveUrl}
                   target="_blank"
                   rel="noopener noreferrer nofollow"
-                  className="mt-4 flex items-center gap-3 rounded-2xl border-2 border-brand-200 bg-brand-50 p-4 font-semibold text-brand-700 transition hover:border-brand-500"
+                  className="mt-4 flex items-center gap-3 rounded-2xl border-2 border-brand-300 bg-brand-100 p-4 font-bold text-cocoa-900 shadow-sm transition hover:border-brand-500 hover:bg-brand-200"
                 >
                   <span aria-hidden className="grid size-10 shrink-0 place-items-center rounded-xl bg-white text-xl shadow-sm">📁</span>
                   <span className="flex-1">
@@ -175,7 +175,7 @@ function Board({ token }: { token: string }) {
                   aria-pressed={filter === f}
                   onClick={() => setFilter(f)}
                   className={`rounded-full px-3.5 py-1.5 text-sm font-semibold transition ${
-                    filter === f ? "bg-ink text-white" : "border border-line bg-surface text-ink-muted hover:text-ink"
+                    filter === f ? "bg-brand-400 text-cocoa-900" : "border border-line bg-surface text-cocoa-700 hover:bg-brand-50"
                   }`}
                 >
                   {f === "all" ? "전체" : TYPE_LABEL[f]}
@@ -186,7 +186,7 @@ function Board({ token }: { token: string }) {
             {posts === null ? (
               <BoardSkeleton />
             ) : visible.length === 0 ? (
-              <div className="rounded-2xl border-2 border-dashed border-line p-10 text-center text-ink-muted">
+              <div className="rounded-2xl border-2 border-dashed border-brand-200 p-10 text-center text-ink-muted">
                 {posts.length === 0 ? (
                   <>
                     아직 공유된 자료가 없어요.
@@ -221,12 +221,12 @@ function Board({ token }: { token: string }) {
 
 function ConnectionDot({ state }: { state: Connection }) {
   const map = {
-    online: { c: "bg-brand-500", t: "실시간 연결됨" },
-    connecting: { c: "bg-amber-400 animate-pulse", t: "연결 중…" },
-    offline: { c: "bg-red-500 animate-pulse", t: "연결 끊김 · 재연결 중" },
+    online: { c: "bg-sprout-500", t: "실시간 연결됨" },
+    connecting: { c: "bg-brand-400 animate-pulse", t: "연결 중…" },
+    offline: { c: "bg-bloom-500 animate-pulse", t: "연결 끊김 · 재연결 중" },
   }[state];
   return (
-    <span className="inline-flex items-center gap-2 rounded-full bg-canvas px-3 py-1 text-xs font-medium text-ink-muted" role="status">
+    <span className="inline-flex items-center gap-2 rounded-full bg-sprout-100/60 px-3 py-1 text-xs font-bold text-sprout-700" role="status">
       <span className={`size-2 rounded-full ${map.c}`} aria-hidden />
       {map.t}
     </span>
@@ -237,7 +237,7 @@ function BoardSkeleton() {
   return (
     <div className="space-y-4" aria-hidden>
       {[0, 1, 2].map((i) => (
-        <div key={i} className="h-32 animate-pulse rounded-2xl bg-black/5" />
+        <div key={i} className="h-32 animate-pulse rounded-2xl bg-brand-100/50" />
       ))}
     </div>
   );

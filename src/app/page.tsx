@@ -57,23 +57,26 @@ export default function JoinPage() {
   }
 
   return (
-    <div className="flex min-h-dvh flex-col bg-gradient-to-b from-brand-50 to-canvas">
-      <header className="mx-auto flex w-full max-w-5xl items-center justify-between px-5 py-4">
-        <Logo />
-        <Link href="/dashboard" className="rounded-lg px-2 py-1 text-sm text-ink-muted underline-offset-4 hover:text-ink hover:underline">
+    <div className="warm-blobs flex min-h-dvh flex-col">
+      <header className="mx-auto flex w-full max-w-5xl items-center justify-end px-5 py-4">
+        <Link href="/dashboard" className="rounded-lg px-2 py-1 text-sm font-semibold text-ink-muted underline-offset-4 hover:text-cocoa-900 hover:underline">
           강사 로그인
         </Link>
       </header>
 
-      <main className="flex flex-1 items-start justify-center px-5 pt-[8vh] pb-16">
+      <main className="flex flex-1 items-start justify-center px-5 pt-[4vh] pb-16">
         <div className="w-full max-w-md">
-          <div className="mb-8 text-center">
-            <p className="text-sm font-semibold text-brand-600">링크 하나로 피어나는 배움</p>
-            <h1 className="mt-2 text-3xl font-extrabold tracking-tight sm:text-4xl">강의 코드 입력</h1>
+          <div className="mb-8 flex flex-col items-center text-center">
+            <Logo size="xl" stacked href={null} />
+            <p className="mt-4 text-lg font-semibold text-cocoa-700">링크 하나로 피어나는 배움</p>
           </div>
 
-          <form onSubmit={submit} noValidate className="rounded-3xl border border-line bg-surface p-6 shadow-sm sm:p-8">
-            <label htmlFor="code" className="block text-center text-base font-medium text-ink-muted">
+          <form onSubmit={submit} noValidate className="card p-6 sm:p-8">
+            <h1 className="flex items-center justify-center gap-2 text-lg font-bold text-cocoa-900">
+              <span className="grid size-6 place-items-center rounded-full bg-brand-400 text-sm">#</span>
+              입장 코드를 입력하세요
+            </h1>
+            <label htmlFor="code" className="mt-1 block text-center text-sm text-ink-muted">
               강사님이 알려주신 <strong className="text-ink">숫자 6자리</strong>를 입력하세요.
             </label>
             <input
@@ -93,10 +96,10 @@ export default function JoinPage() {
               }}
               aria-invalid={!!error}
               aria-describedby={error ? "code-error" : undefined}
-              className="mt-4 w-full rounded-2xl border-2 border-line bg-canvas py-4 text-center font-mono text-4xl font-bold tracking-[0.3em] outline-none transition placeholder:text-black/15 focus:border-brand-500 focus:bg-surface sm:text-5xl"
+              className="mt-4 w-full rounded-2xl border-2 border-brand-200 bg-brand-50 py-4 text-center font-mono text-4xl font-extrabold tracking-[0.3em] text-cocoa-900 outline-none transition placeholder:text-cocoa-700/20 focus:border-brand-500 focus:bg-surface sm:text-5xl"
             />
             {error && (
-              <p id="code-error" role="alert" className="mt-3 rounded-xl bg-red-50 px-3 py-2 text-center text-sm font-medium text-red-700">
+              <p id="code-error" role="alert" className="mt-3 rounded-xl bg-bloom-50 px-3 py-2 text-center text-sm font-semibold text-bloom-600">
                 {error}
               </p>
             )}
@@ -108,7 +111,7 @@ export default function JoinPage() {
                 type="checkbox"
                 checked={remember}
                 onChange={(e) => setRemember(e.target.checked)}
-                className="size-4 accent-brand-500"
+                className="size-4 accent-brand-600"
               />
               이 브라우저에 최근 입장한 강의 기억하기
             </label>
@@ -122,7 +125,7 @@ export default function JoinPage() {
               <ul className="space-y-2">
                 {recent.map((r) => (
                   <li key={r.token} className="flex items-center gap-2 rounded-2xl border border-line bg-surface pr-2">
-                    <Link href={`/s/${r.token}`} className="flex-1 truncate rounded-2xl px-4 py-3 font-medium hover:text-brand-700">
+                    <Link href={`/s/${r.token}`} className="flex-1 truncate rounded-2xl px-4 py-3 font-semibold hover:text-brand-700">
                       {r.title || "강의 공유 보드"}
                     </Link>
                     <button

@@ -1,28 +1,45 @@
 @import "tailwindcss";
 
 /*
- * 브랜드 토큰 — 브랜드 시안이 들어오면 이 블록의 값만 바꾸면 전체에 반영된다.
- * (임시 팔레트: '피움' = 새싹 초록 + 따뜻한 꽃 포인트)
+ * 브랜드 토큰 — "따뜻한 노란빛" 시안 기준.
+ *  brand  : 메인 노랑 (버튼·선택 탭·강조 배경)
+ *  cocoa  : 노랑 위 글자색·입장 코드 (진한 갈색)
+ *  sprout : 로고 새싹·실시간 연결 표시 (초록)
+ *  bloom  : 강의 종료·경고 포인트 (코랄)
  */
 @theme {
-  --color-brand-50: #eefbf3;
-  --color-brand-100: #d5f5e1;
-  --color-brand-200: #aeeac6;
-  --color-brand-500: #1f9d5c;
-  --color-brand-600: #157f49;
-  --color-brand-700: #11653b;
-  --color-bloom-400: #ff8a6b;
-  --color-bloom-500: #f2694a;
+  --color-brand-50: #fffaeb;
+  --color-brand-100: #fff2cc;
+  --color-brand-200: #ffe49a;
+  --color-brand-300: #ffd45c;
+  --color-brand-400: #fdc526;
+  --color-brand-500: #f6b00b;
+  --color-brand-600: #e09400;
+  --color-brand-700: #b86e00;
 
-  --color-ink: #17201b;
-  --color-ink-muted: #56635b;
-  --color-line: #dfe5e1;
+  --color-cocoa-700: #6e4c1e;
+  --color-cocoa-900: #3e2b10;
+
+  --color-sprout-100: #e3f5d8;
+  --color-sprout-500: #5cb83a;
+  --color-sprout-600: #43982a;
+  --color-sprout-700: #2f7a1c;
+
+  --color-bloom-50: #fff1ef;
+  --color-bloom-400: #ff7d72;
+  --color-bloom-500: #f45d52;
+  --color-bloom-600: #db463c;
+
+  --color-ink: #2d2417;
+  --color-ink-muted: #7d6e58;
+  --color-line: #f1e5c9;
   --color-surface: #ffffff;
-  --color-canvas: #f6f8f6;
+  --color-canvas: #fdf8ec;
 
   --font-sans: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo",
     "Malgun Gothic", "Noto Sans KR", system-ui, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "D2Coding", monospace;
+  --font-hand: "Nanum Pen Script", "Pretendard Variable", cursive;
 }
 
 html {
@@ -39,9 +56,24 @@ body {
 
 /* 키보드 사용자를 위한 뚜렷한 초점 표시 */
 :focus-visible {
-  outline: 3px solid var(--color-bloom-500);
+  outline: 3px solid var(--color-brand-600);
   outline-offset: 2px;
-  border-radius: 6px;
+  border-radius: 8px;
+}
+
+/* 시안의 부드러운 노란 배경 얼룩 */
+.warm-blobs {
+  background-image:
+    radial-gradient(38rem 26rem at 108% -8%, rgb(255 228 154 / 0.55), transparent 70%),
+    radial-gradient(30rem 22rem at -12% 104%, rgb(255 228 154 / 0.5), transparent 70%),
+    radial-gradient(14rem 10rem at 92% 88%, rgb(227 245 216 / 0.7), transparent 70%);
+}
+
+.card {
+  border: 1px solid var(--color-line);
+  background: var(--color-surface);
+  border-radius: 1.5rem;
+  box-shadow: 0 1px 2px rgb(110 76 30 / 0.04), 0 8px 24px -12px rgb(110 76 30 / 0.12);
 }
 
 @keyframes bloom-in {

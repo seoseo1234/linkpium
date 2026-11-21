@@ -5,7 +5,19 @@ import Link from "next/link";
 import type { User } from "firebase/auth";
 import { useAuth } from "@/components/AuthProvider";
 import { InstructorGate } from "@/components/InstructorGate";
-import { CopyButton, FullMessage, Logo, Modal, QrImage, StatusBadge, btn, inputCls, timeLabel } from "@/components/ui";
+import {
+  CopyButton,
+  FullMessage,
+  Logo,
+  Modal,
+  QrImage,
+  StatusBadge,
+  btn,
+  dateLabel,
+  inputCls,
+  relativeTime,
+  useMinuteTick,
+} from "@/components/ui";
 import { directLink } from "@/lib/firebase-client";
 import { useInstructorPosts, useInstructorSession, type InstructorSession, type Post } from "@/lib/realtime";
 import { TYPE_LABEL, canPost, displayTitle, formatJoinCode, isSafeHttpUrl, sortPosts, type PostType } from "@/lib/shared";
@@ -16,10 +28,14 @@ export default function InstructorBoardPage({ params }: { params: Promise<{ id: 
   return <InstructorGate>{(user) => <InstructorBoard id={id} user={user} />}</InstructorGate>;
 }
 
+const TYPE_ICON: Record<PostType, string> = { link: "🔗", prompt: "✨", notice: "📢" };
+
 function InstructorBoard({ id, user }: { id: string; user: User }) {
+  const { api } = useAuth();
   const { session, error } = useInstructorSession(id, user.uid);
   const posts = useInstructorPosts(session?.publicToken);
   const [focus, setFocus] = useState(false);
+  const [statusBusy, setStatusBusy] = useState(false);
 
   useEffect(() => {
     if (session) document.title = `${session.title} · 강사 · 링크피움`;
@@ -29,18 +45,31 @@ function InstructorBoard({ id, user }: { id: string; user: User }) {
     return <FullMessage title={error} action={<Link className={btn.secondary} href="/dashboard">내 강의 목록</Link>} />;
   if (!session) return <FullMessage title="불러오는 중…" />;
 
+  const isOpen = session.status === "live" || session.status === "draft";
+  async function toggleStatus() {
+    if (isOpen && !confirm("강의를 종료할까요?\n참여자는 기존 자료를 계속 읽을 수 있고, 새 자료는 올릴 수 없습니다.")) return;
+    setStatusBusy(true);
+    try {
+      await api(`/api/instructor/sessions/${id}`, { method: "PATCH", body: { status: isOpen ? "ended" : "live" } });
+    } catch (e) {
+      alert((e as Error).message);
+    } finally {
+      setStatusBusy(false);
+    }
+  }
+
   return (
-    <div className="min-h-dvh">
-      <header className="sticky top-0 z-20 border-b border-line bg-surface/95 backdrop-blur">
+    <div className="warm-blobs min-h-dvh">
+      <header className="sticky top-0 z-20 border-b border-line bg-surface/90 backdrop-blur">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-4 gap-y-2 px-5 py-3">
-          {!focus && <Logo href="/dashboard" />}
-          <div className="flex min-w-0 flex-1 items-center gap-2">
+          <Logo href="/dashboard" />
+          <div className="flex min-w-0 flex-1 items-center gap-2.5">
             <StatusBadge status={session.status} />
-            <h1 className="truncate text-lg font-bold">{session.title}</h1>
+            <h1 className="truncate text-lg font-extrabold">{session.title}</h1>
           </div>
-          <div className="flex items-center gap-2 rounded-xl bg-canvas px-3 py-1.5">
-            <span className="text-xs text-ink-muted">입장 코드</span>
-            <strong className="font-mono text-xl tracking-wider">{formatJoinCode(session.joinCode)}</strong>
+          <div className="flex items-center gap-2 rounded-xl bg-brand-100 px-3 py-1">
+            <span className="text-xs font-semibold text-cocoa-700">입장 코드</span>
+            <strong className="font-mono text-xl font-extrabold tracking-wider text-cocoa-900">{formatJoinCode(session.joinCode)}</strong>
           </div>
           <Link href={`/instructor/sessions/${id}/join`} target="_blank" className={btn.secondary}>
             🖥 입장 안내 화면
@@ -48,11 +77,16 @@ function InstructorBoard({ id, user }: { id: string; user: User }) {
           <button type="button" className={btn.ghost} onClick={() => setFocus((f) => !f)} aria-pressed={focus}>
             {focus ? "집중 모드 끄기" : "집중 모드"}
           </button>
+          {session.status !== "closed" && (
+            <button type="button" className={isOpen ? btn.stop : btn.primary} disabled={statusBusy} onClick={toggleStatus}>
+              {isOpen ? "강의 종료" : "강의 다시 열기"}
+            </button>
+          )}
         </div>
       </header>
 
-      <main className={`mx-auto grid max-w-6xl gap-6 px-5 py-6 ${focus ? "" : "lg:grid-cols-[1fr_320px]"}`}>
-        <div className="min-w-0 space-y-6">
+      <main className={`mx-auto grid max-w-6xl gap-5 px-5 py-6 ${focus ? "max-w-4xl" : "lg:grid-cols-[1fr_300px]"}`}>
+        <div className="min-w-0 space-y-5">
           <Composer session={session} />
           <History session={session} posts={posts} />
         </div>
@@ -62,17 +96,17 @@ function InstructorBoard({ id, user }: { id: string; user: User }) {
   );
 }
 
-/* ───────────────────────── 자료 등록 ───────────────────────── */
+/* ───────────────────────── 실시간 공유하기 ───────────────────────── */
 
 const TAB_HINT: Record<PostType, { title: string; content: string }> = {
-  link: { title: "예: 이미지 생성 사이트 (비우면 주소로 표시)", content: "https://" },
-  prompt: { title: "예: 수업 지도안 작성 프롬프트 (선택)", content: "여러 줄 프롬프트를 붙여넣으세요. 줄바꿈과 특수문자가 그대로 전달됩니다." },
+  link: { title: "제목 (선택 · 비우면 주소로 표시)", content: "https://" },
+  prompt: { title: "제목 (선택) 예: 수업 지도안 작성 프롬프트", content: "여러 줄 프롬프트를 붙여넣으세요. 줄바꿈과 특수문자가 그대로 전달됩니다." },
   notice: { title: "예: 지금부터 5분간 이미지 만들기 실습", content: "추가 안내 (선택)" },
 };
 
 function Composer({ session }: { session: InstructorSession }) {
   const { api } = useAuth();
-  const [type, setType] = useState<PostType>("prompt");
+  const [type, setType] = useState<PostType>("link");
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [busy, setBusy] = useState(false);
@@ -82,7 +116,7 @@ function Composer({ session }: { session: InstructorSession }) {
 
   useEffect(() => {
     if (msg?.kind !== "ok") return;
-    const t = setTimeout(() => setMsg(null), 3000);
+    const t = setTimeout(() => setMsg(null), 4000);
     return () => clearTimeout(t);
   }, [msg]);
 
@@ -94,7 +128,7 @@ function Composer({ session }: { session: InstructorSession }) {
       await api(`/api/instructor/sessions/${session.id}/posts`, { method: "POST", body: { type, title, content } });
       setTitle("");
       setContent("");
-      setMsg({ kind: "ok", text: `✓ ${TYPE_LABEL[type]}을(를) 공유했습니다. 참여자 화면에 바로 나타납니다.` });
+      setMsg({ kind: "ok", text: "참여자들에게 즉시 전달되었습니다!" });
       contentRef.current?.focus();
     } catch (e) {
       setMsg({ kind: "err", text: (e as Error).message });
@@ -110,12 +144,18 @@ function Composer({ session }: { session: InstructorSession }) {
     }
   };
 
+  const shareBtn = (
+    <button type="submit" disabled={busy || !allowed} className={`${btn.primary} shrink-0 px-6 py-3 text-base`}>
+      {busy ? "공유 중…" : "공유하기"}
+    </button>
+  );
+
   return (
-    <section className="rounded-3xl border border-line bg-surface p-5 shadow-sm" aria-labelledby="composer-h">
-      <h2 id="composer-h" className="sr-only">
-        자료 등록
+    <section className="card p-5 sm:p-6" aria-labelledby="composer-h">
+      <h2 id="composer-h" className="mb-4 text-lg font-extrabold">
+        실시간 공유하기
       </h2>
-      <div role="tablist" aria-label="자료 유형" className="mb-4 inline-flex rounded-2xl bg-canvas p-1">
+      <div role="tablist" aria-label="자료 유형" className="mb-4 grid grid-cols-3 gap-2">
         {(["link", "prompt", "notice"] as const).map((t) => (
           <button
             key={t}
@@ -126,9 +166,10 @@ function Composer({ session }: { session: InstructorSession }) {
               setType(t);
               setMsg(null);
             }}
-            className={`rounded-xl px-4 py-2 text-sm font-semibold transition ${type === t ? "bg-surface text-ink shadow-sm" : "text-ink-muted hover:text-ink"}`}
+            className={`rounded-xl py-2.5 text-sm font-bold transition ${
+              type === t ? "bg-brand-400 text-cocoa-900 shadow-[0_4px_12px_-4px_rgb(246_176_11/0.55)]" : "bg-canvas text-cocoa-700 hover:bg-brand-100"
+            }`}
           >
-            {t === "link" ? "🔗 " : t === "prompt" ? "✨ " : "📢 "}
             {TYPE_LABEL[t]}
           </button>
         ))}
@@ -144,16 +185,24 @@ function Composer({ session }: { session: InstructorSession }) {
       >
         {type === "link" ? (
           <>
-            <input
-              ref={contentRef}
-              className={inputCls}
-              type="url"
-              aria-label="링크 주소"
-              placeholder={TAB_HINT.link.content}
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              autoFocus
-            />
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <span aria-hidden className="absolute left-3 top-1/2 grid size-7 -translate-y-1/2 place-items-center rounded-full bg-brand-100 text-sm">
+                  🔗
+                </span>
+                <input
+                  ref={contentRef}
+                  className={`${inputCls} py-3 pl-12`}
+                  type="url"
+                  aria-label="링크 주소"
+                  placeholder={TAB_HINT.link.content}
+                  value={content}
+                  onChange={(e) => setContent(e.target.value)}
+                  autoFocus
+                />
+              </div>
+              {shareBtn}
+            </div>
             <input className={inputCls} aria-label="제목" placeholder={TAB_HINT.link.title} value={title} onChange={(e) => setTitle(e.target.value)} maxLength={200} />
           </>
         ) : (
@@ -163,50 +212,68 @@ function Composer({ session }: { session: InstructorSession }) {
               ref={contentRef}
               className={`${inputCls} ${type === "prompt" ? "font-mono text-sm" : ""}`}
               aria-label="내용"
-              rows={type === "prompt" ? 8 : 3}
+              rows={type === "prompt" ? 7 : 3}
               placeholder={TAB_HINT[type].content}
               value={content}
               onChange={(e) => setContent(e.target.value)}
               autoFocus
             />
+            <div className="flex justify-end">{shareBtn}</div>
           </>
         )}
 
-        <div className="flex flex-wrap items-center gap-3">
-          <button type="submit" disabled={busy || !allowed} className={`${btn.primary} px-7 py-3.5 text-lg shadow-md shadow-brand-500/20`}>
-            {busy ? "공유 중…" : "지금 공유하기"}
-          </button>
-          <kbd className="hidden text-xs text-ink-muted sm:inline">Ctrl + Enter</kbd>
-          <span aria-live="polite" className={`text-sm font-medium ${msg?.kind === "err" ? "text-red-700" : "text-brand-700"}`}>
-            {!allowed ? "종료된 강의입니다. 오른쪽 설정에서 강의를 다시 열면 공유할 수 있어요." : msg?.text}
-          </span>
+        <div aria-live="polite">
+          {!allowed ? (
+            <p className="rounded-xl bg-stone-100 px-4 py-3 text-center text-sm font-semibold text-stone-600">
+              종료된 강의입니다. 위의 ‘강의 다시 열기’를 누르면 공유할 수 있어요.
+            </p>
+          ) : msg ? (
+            <p
+              className={`animate-bloom rounded-xl px-4 py-3 text-center text-sm font-bold ${
+                msg.kind === "ok" ? "bg-brand-100 text-brand-700" : "bg-bloom-50 text-bloom-600"
+              }`}
+            >
+              {msg.kind === "ok" ? "✓ " : ""}
+              {msg.text}
+            </p>
+          ) : (
+            <p className="text-right text-xs text-ink-muted">
+              <kbd className="rounded border border-line bg-canvas px-1.5 py-0.5 font-sans">Ctrl</kbd> +{" "}
+              <kbd className="rounded border border-line bg-canvas px-1.5 py-0.5 font-sans">Enter</kbd> 로 바로 공유
+            </p>
+          )}
         </div>
       </form>
     </section>
   );
 }
 
-/* ───────────────────────── 공유 기록 ───────────────────────── */
+/* ───────────────────────── 공유된 자료 ───────────────────────── */
 
 function History({ session, posts }: { session: InstructorSession; posts: Post[] | null }) {
+  const now = useMinuteTick();
   const sorted = posts ? sortPosts(posts) : null;
   const drafts = sorted?.filter((p) => !p.published).length ?? 0;
   return (
-    <section aria-labelledby="history-h">
-      <div className="mb-3 flex items-baseline gap-2">
-        <h2 id="history-h" className="text-lg font-bold">
-          공유 기록
+    <section className="card p-5 sm:p-6" aria-labelledby="history-h">
+      <div className="mb-2 flex items-baseline gap-2">
+        <h2 id="history-h" className="text-lg font-extrabold">
+          공유된 자료
         </h2>
-        {sorted && <span className="text-sm text-ink-muted">{sorted.length}개{drafts ? ` · 비공개 초안 ${drafts}개` : ""}</span>}
+        {sorted && (
+          <span className="text-sm text-ink-muted">
+            {sorted.length}개{drafts ? ` · 비공개 초안 ${drafts}개` : ""}
+          </span>
+        )}
       </div>
       {sorted === null ? (
-        <div className="h-24 animate-pulse rounded-2xl bg-black/5" />
+        <div className="h-24 animate-pulse rounded-2xl bg-brand-100/50" />
       ) : sorted.length === 0 ? (
-        <p className="rounded-2xl border-2 border-dashed border-line p-8 text-center text-ink-muted">아직 공유한 자료가 없습니다.</p>
+        <p className="py-8 text-center text-ink-muted">아직 공유한 자료가 없습니다.</p>
       ) : (
-        <ul className="space-y-3">
+        <ul className="divide-y divide-line">
           {sorted.map((p) => (
-            <HistoryItem key={p.id} post={p} sessionId={session.id} />
+            <HistoryItem key={p.id} post={p} sessionId={session.id} now={now} />
           ))}
         </ul>
       )}
@@ -214,11 +281,12 @@ function History({ session, posts }: { session: InstructorSession; posts: Post[]
   );
 }
 
-function HistoryItem({ post, sessionId }: { post: Post; sessionId: string }) {
+function HistoryItem({ post, sessionId, now }: { post: Post; sessionId: string; now: number }) {
   const { api } = useAuth();
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
+  const [open, setOpen] = useState(false);
   const path = `/api/instructor/sessions/${sessionId}/posts/${post.id}`;
 
   async function patch(body: Record<string, unknown>) {
@@ -234,60 +302,85 @@ function HistoryItem({ post, sessionId }: { post: Post; sessionId: string }) {
   }
 
   return (
-    <li className={`rounded-2xl border bg-surface p-4 ${post.published ? "border-line" : "border-dashed border-amber-300 bg-amber-50/40"}`}>
-      <div className="flex flex-wrap items-center gap-2 text-xs">
-        <span className="rounded-full bg-canvas px-2 py-0.5 font-semibold">{TYPE_LABEL[post.type]}</span>
-        {post.isPinned && <span className="font-semibold text-brand-700">📌 고정</span>}
-        {!post.published && <span className="rounded-full bg-amber-100 px-2 py-0.5 font-semibold text-amber-800">비공개 초안</span>}
-        <time className="text-ink-muted">{post.pending ? "게시 중…" : timeLabel(post.createdAtMs)}</time>
-        <div className="ml-auto flex flex-wrap gap-0.5">
-          {!post.published && (
-            <button type="button" className={`${btn.primary} px-3 py-1 text-xs`} disabled={busy} onClick={() => patch({ published: true })}>
-              지금 공개
-            </button>
-          )}
-          <button type="button" className={btn.ghost} disabled={busy} onClick={() => patch({ isPinned: !post.isPinned })}>
-            {post.isPinned ? "고정 해제" : "고정"}
-          </button>
-          <button type="button" className={btn.ghost} disabled={busy} onClick={() => setEditing(true)}>
-            수정
-          </button>
-          {post.published && (
-            <button type="button" className={btn.ghost} disabled={busy} onClick={() => patch({ published: false })}>
-              숨기기
-            </button>
-          )}
-          <button
-            type="button"
-            className={btn.danger}
-            disabled={busy}
-            onClick={async () => {
-              if (!confirm(`"${displayTitle(post)}" 을(를) 삭제할까요?\n참여자 화면에서도 즉시 사라집니다.`)) return;
-              setBusy(true);
-              try {
-                await api(path, { method: "DELETE" });
-              } catch (e) {
-                setErr((e as Error).message);
-                setBusy(false);
-              }
-            }}
-          >
-            삭제
-          </button>
-        </div>
+    <li className={`py-3 ${post.published ? "" : "opacity-80"}`}>
+      <div className="flex items-center gap-3">
+        <span aria-hidden className="grid size-9 shrink-0 place-items-center rounded-full bg-brand-100 text-base">
+          {TYPE_ICON[post.type]}
+        </span>
+        <button type="button" onClick={() => setOpen((v) => !v)} aria-expanded={open} className="min-w-0 flex-1 text-left">
+          <span className="block truncate font-bold">{displayTitle(post)}</span>
+        </button>
+        <span className="hidden shrink-0 rounded-md bg-brand-100 px-2 py-0.5 text-xs font-bold text-cocoa-700 sm:inline">{TYPE_LABEL[post.type]}</span>
+        {!post.published && <span className="shrink-0 rounded-md bg-stone-100 px-2 py-0.5 text-xs font-bold text-stone-600">비공개</span>}
+        <time className="w-14 shrink-0 text-right text-xs text-ink-muted">{post.pending ? "게시 중" : relativeTime(post.createdAtMs, now)}</time>
+        <button
+          type="button"
+          className={`grid size-8 shrink-0 place-items-center rounded-lg transition hover:bg-brand-50 ${post.isPinned ? "" : "opacity-30 grayscale hover:opacity-70"}`}
+          disabled={busy}
+          onClick={() => patch({ isPinned: !post.isPinned })}
+          aria-pressed={post.isPinned}
+          aria-label={post.isPinned ? "고정 해제" : "상단 고정"}
+          title={post.isPinned ? "고정 해제" : "상단 고정"}
+        >
+          📌
+        </button>
       </div>
-      <p className="mt-1.5 font-semibold">{displayTitle(post)}</p>
-      {post.type === "link" ? (
-        isSafeHttpUrl(post.content) ? (
-          <a href={post.content} target="_blank" rel="noopener noreferrer" className="block truncate text-sm text-sky-700 underline-offset-2 hover:underline">
-            {post.content}
-          </a>
-        ) : null
-      ) : (
-        post.content && <p className="mt-1 line-clamp-3 whitespace-pre-wrap text-sm text-ink-muted">{post.content}</p>
+
+      {open && (
+        <div className="ml-12 mt-2 space-y-2">
+          {post.type === "link" ? (
+            isSafeHttpUrl(post.content) && (
+              <a href={post.content} target="_blank" rel="noopener noreferrer" className="block truncate text-sm text-brand-700 underline-offset-2 hover:underline">
+                {post.content}
+              </a>
+            )
+          ) : (
+            post.content && <p className="max-h-48 overflow-auto whitespace-pre-wrap rounded-xl bg-canvas p-3 text-sm text-ink-muted">{post.content}</p>
+          )}
+        </div>
       )}
-      {err && <p role="alert" className="mt-2 text-sm text-red-700">{err}</p>}
-      <EditPostModal open={editing} onClose={() => setEditing(false)} post={post} onSave={async (b) => { await api(path, { method: "PATCH", body: b }); }} />
+
+      <div className="ml-12 mt-1 flex flex-wrap gap-0.5">
+        {!post.published && (
+          <button type="button" className={`${btn.primary} px-3 py-1 text-xs`} disabled={busy} onClick={() => patch({ published: true })}>
+            지금 공개
+          </button>
+        )}
+        <button type="button" className={`${btn.ghost} px-2 py-0.5 text-xs`} disabled={busy} onClick={() => setEditing(true)}>
+          수정
+        </button>
+        {post.published && (
+          <button type="button" className={`${btn.ghost} px-2 py-0.5 text-xs`} disabled={busy} onClick={() => patch({ published: false })}>
+            숨기기
+          </button>
+        )}
+        <button
+          type="button"
+          className={`${btn.danger} px-2 py-0.5 text-xs`}
+          disabled={busy}
+          onClick={async () => {
+            if (!confirm(`"${displayTitle(post)}" 을(를) 삭제할까요?\n참여자 화면에서도 즉시 사라집니다.`)) return;
+            setBusy(true);
+            try {
+              await api(path, { method: "DELETE" });
+            } catch (e) {
+              setErr((e as Error).message);
+              setBusy(false);
+            }
+          }}
+        >
+          삭제
+        </button>
+      </div>
+      {err && <p role="alert" className="ml-12 mt-1 text-sm text-bloom-600">{err}</p>}
+      <EditPostModal
+        open={editing}
+        onClose={() => setEditing(false)}
+        post={post}
+        onSave={async (b) => {
+          await api(path, { method: "PATCH", body: b });
+        }}
+      />
     </li>
   );
 }
@@ -346,7 +439,7 @@ function EditPostModal({
             onChange={(e) => setContent(e.target.value)}
           />
         )}
-        {err && <p role="alert" className="text-sm text-red-700">{err}</p>}
+        {err && <p role="alert" className="text-sm text-bloom-600">{err}</p>}
         <div className="flex justify-end gap-2">
           <button type="button" className={btn.secondary} onClick={onClose}>
             취소
@@ -360,7 +453,7 @@ function EditPostModal({
   );
 }
 
-/* ───────────────────────── 접속 정보 · 설정 ───────────────────────── */
+/* ───────────────────────── 참여 방법 · 강의 정보 ───────────────────────── */
 
 function SidePanel({ session }: { session: InstructorSession }) {
   const { api } = useAuth();
@@ -389,12 +482,15 @@ function SidePanel({ session }: { session: InstructorSession }) {
 
   return (
     <aside className="space-y-4">
-      <section className="rounded-3xl border border-line bg-surface p-5 shadow-sm">
-        <h2 className="mb-3 font-bold">참여 방법</h2>
+      <section className="card p-5">
+        <h2 className="mb-3 text-lg font-extrabold">참여 방법</h2>
+        <div className="mb-4 rounded-2xl bg-brand-100 py-3 text-center">
+          <p className="text-xs font-semibold text-cocoa-700">입장 코드</p>
+          <p className="font-mono text-4xl font-extrabold tracking-wider text-cocoa-900">{formatJoinCode(session.joinCode)}</p>
+        </div>
         <div className="space-y-2">
-          <CopyButton text={link} label="🔗 참여자용 직접 링크 복사" className={`${btn.secondary} w-full`} />
-          <CopyButton text={session.joinCode} label="🔢 입장 코드 복사" className={`${btn.secondary} w-full`} />
-          <button type="button" className={`${btn.secondary} w-full`} onClick={() => setQrOpen(true)}>
+          <CopyButton text={link} label="🔗 강의 링크 복사" className={`${btn.secondary} w-full py-2.5`} />
+          <button type="button" className={`${btn.secondary} w-full py-2.5`} onClick={() => setQrOpen(true)}>
             ▦ QR코드 보기
           </button>
           <button
@@ -411,9 +507,9 @@ function SidePanel({ session }: { session: InstructorSession }) {
         </div>
       </section>
 
-      <section className="rounded-3xl border border-line bg-surface p-5 shadow-sm">
-        <h2 className="mb-1 font-bold">📁 기본 자료 (구글 드라이브)</h2>
-        <p className="mb-3 text-xs text-ink-muted">참여자 화면 맨 위에 항상 고정됩니다.</p>
+      <section className="card p-5">
+        <h2 className="mb-1 text-lg font-extrabold">📁 기본 자료</h2>
+        <p className="mb-3 text-xs text-ink-muted">구글 드라이브 링크 · 참여자 화면 맨 위에 고정</p>
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -428,26 +524,29 @@ function SidePanel({ session }: { session: InstructorSession }) {
         </form>
       </section>
 
-      <section className="rounded-3xl border border-line bg-surface p-5 shadow-sm">
-        <h2 className="mb-3 font-bold">강의 상태</h2>
+      <section className="card p-5">
+        <h2 className="mb-3 text-lg font-extrabold">강의 정보</h2>
+        <p className="mb-3 flex items-center gap-2 text-sm font-semibold">
+          <span aria-hidden>📅</span> {dateLabel(session.createdAtMs)} 생성
+        </p>
+        {session.description && <p className="mb-3 whitespace-pre-wrap text-sm text-ink-muted">{session.description}</p>}
         <div className="space-y-2">
-          {session.status === "live" || session.status === "draft" ? (
-            <button
-              type="button"
-              className={`${btn.secondary} w-full`}
+          <button type="button" className={`${btn.ghost} w-full`} onClick={() => setSettingsOpen(true)}>
+            제목·설명 수정
+          </button>
+          <label className="flex cursor-pointer items-start gap-2 py-1 text-sm">
+            <input
+              type="checkbox"
+              className="mt-0.5 size-4 accent-brand-600"
+              checked={session.readableAfterEnd}
               disabled={!!busy}
-              onClick={() => {
-                if (!confirm("강의를 종료할까요?\n참여자는 기존 자료를 계속 읽을 수 있고, 새 자료는 올릴 수 없습니다.")) return;
-                run("status", () => patchSession({ status: "ended" }), "강의를 종료했습니다.");
-              }}
-            >
-              강의 종료
-            </button>
-          ) : (
-            <button type="button" className={`${btn.secondary} w-full`} disabled={!!busy} onClick={() => run("status", () => patchSession({ status: "live" }), "강의를 다시 열었습니다.")}>
-              강의 다시 열기
-            </button>
-          )}
+              onChange={(e) => run("status", () => patchSession({ readableAfterEnd: e.target.checked }))}
+            />
+            <span>
+              종료 후에도 자료 열람 허용
+              <span className="block text-xs text-ink-muted">끄면 강의 종료 시 참여자 접근이 막힙니다.</span>
+            </span>
+          </label>
           {session.status !== "closed" ? (
             <button
               type="button"
@@ -461,36 +560,23 @@ function SidePanel({ session }: { session: InstructorSession }) {
               참여자 접근 차단
             </button>
           ) : (
-            <p className="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700">참여자 접근이 차단된 상태입니다.</p>
+            <div className="space-y-2">
+              <p className="rounded-xl bg-bloom-50 px-3 py-2 text-sm font-semibold text-bloom-600">참여자 접근이 차단된 상태입니다.</p>
+              <button type="button" className={`${btn.secondary} w-full`} disabled={!!busy} onClick={() => run("status", () => patchSession({ status: "ended" }), "차단을 해제했습니다 (종료 상태).")}>
+                차단 해제
+              </button>
+            </div>
           )}
-          <label className="flex cursor-pointer items-start gap-2 pt-1 text-sm">
-            <input
-              type="checkbox"
-              className="mt-0.5 size-4 accent-brand-500"
-              checked={session.readableAfterEnd}
-              disabled={!!busy}
-              onChange={(e) => run("status", () => patchSession({ readableAfterEnd: e.target.checked }))}
-            />
-            <span>
-              종료 후에도 참여자가 자료 열람 가능
-              <span className="block text-xs text-ink-muted">끄면 강의 종료 시 참여자 접근이 막힙니다.</span>
-            </span>
-          </label>
-          <button type="button" className={`${btn.ghost} w-full`} onClick={() => setSettingsOpen(true)}>
-            제목·설명 수정
-          </button>
         </div>
       </section>
 
       {msg && (
-        <p role="status" className={`rounded-xl px-3 py-2 text-sm ${msg.kind === "ok" ? "bg-brand-50 text-brand-700" : "bg-red-50 text-red-700"}`}>
+        <p role="status" className={`rounded-xl px-3 py-2 text-sm font-semibold ${msg.kind === "ok" ? "bg-brand-100 text-brand-700" : "bg-bloom-50 text-bloom-600"}`}>
           {msg.text}
         </p>
       )}
 
-      <p className="px-2 text-xs leading-relaxed text-ink-muted">
-        코드나 링크를 아는 사람은 누구나 볼 수 있습니다. 개인정보나 비공개 자료는 올리지 마세요.
-      </p>
+      <p className="px-2 text-xs leading-relaxed text-ink-muted">코드나 링크를 아는 사람은 누구나 볼 수 있습니다. 개인정보나 비공개 자료는 올리지 마세요.</p>
 
       <Modal open={qrOpen} onClose={() => setQrOpen(false)} title="참여 QR코드">
         <div className="flex flex-col items-center gap-3">
@@ -543,8 +629,8 @@ function SessionSettingsModal({
         }}
       >
         <input className={inputCls} value={title} onChange={(e) => setTitle(e.target.value)} aria-label="강의 제목" maxLength={200} required />
-        <textarea className={inputCls} rows={3} value={description} onChange={(e) => setDescription(e.target.value)} aria-label="설명" maxLength={1000} placeholder="설명 (선택)" />
-        {err && <p role="alert" className="text-sm text-red-700">{err}</p>}
+        <textarea className={inputCls} rows={3} value={description} onChange={(e) => setDescription(e.target.value)} aria-label="설명" maxLength={1000} placeholder="설명 (선택) 예: 14:00 ~ 16:00" />
+        {err && <p role="alert" className="text-sm text-bloom-600">{err}</p>}
         <div className="flex justify-end gap-2">
           <button type="button" className={btn.secondary} onClick={onClose}>
             취소

@@ -5,15 +5,29 @@ import Link from "next/link";
 import QRCode from "qrcode";
 import { STATUS_LABEL, type SessionStatus } from "@/lib/shared";
 
-export function Logo({ size = "md", href = "/" }: { size?: "md" | "lg"; href?: string | null }) {
-  // 브랜드 로고 파일이 들어오면 이 컴포넌트만 교체
+/** 시안의 새싹 심볼 */
+export function Sprout({ className = "size-8" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 64 64" className={className} aria-hidden>
+      <path d="M31 58c0-12 .5-22 1-30" stroke="#3f8f2a" strokeWidth="4.5" strokeLinecap="round" fill="none" />
+      <path d="M31.5 30C30 17 20 9 5 11c1 14 11 22 26.5 19z" fill="#5cb83a" />
+      <path d="M31.5 30C30 17 20 9 5 11c9 3 18 10 26.5 19z" fill="#43982a" />
+      <path d="M32.5 28C34 15 44 7 59 9c-1 14-11 22-26.5 19z" fill="#7ccf4f" />
+      <path d="M32.5 28C34 15 44 7 59 9c-9 3-18 10-26.5 19z" fill="#5cb83a" />
+    </svg>
+  );
+}
+
+export function Logo({ size = "md", href = "/", stacked = false }: { size?: "md" | "lg" | "xl"; href?: string | null; stacked?: boolean }) {
+  const sym = { md: "size-8", lg: "size-11", xl: "size-20" }[size];
+  const word = { md: "text-lg", lg: "text-2xl", xl: "text-5xl" }[size];
+  const sub = { md: "text-[10px]", lg: "text-xs", xl: "text-xl" }[size];
   const inner = (
-    <span className={`inline-flex items-center gap-2 font-extrabold tracking-tight ${size === "lg" ? "text-3xl" : "text-lg"}`}>
-      <span aria-hidden className={`grid place-items-center rounded-xl bg-brand-500 text-white ${size === "lg" ? "size-11 text-2xl" : "size-8 text-base"}`}>
-        ✿
-      </span>
-      <span>
-        링크<span className="text-brand-600">피움</span>
+    <span className={`inline-flex items-center font-extrabold tracking-tight text-cocoa-900 ${stacked ? "flex-col gap-0.5" : "gap-2"}`}>
+      <Sprout className={sym} />
+      <span className={`flex flex-col leading-none ${stacked ? "items-center" : ""}`}>
+        <span className={word}>링크피움</span>
+        <span className={`${sub} mt-0.5 font-semibold text-cocoa-700`}>(LinkPium)</span>
       </span>
     </span>
   );
@@ -28,31 +42,32 @@ export function Logo({ size = "md", href = "/" }: { size?: "md" | "lg"; href?: s
 
 export function StatusBadge({ status }: { status: SessionStatus }) {
   const cls: Record<SessionStatus, string> = {
-    draft: "bg-gray-100 text-gray-700",
-    live: "bg-brand-100 text-brand-700",
-    ended: "bg-amber-100 text-amber-800",
-    closed: "bg-red-100 text-red-700",
+    draft: "bg-stone-100 text-stone-600",
+    live: "bg-brand-300 text-cocoa-900",
+    ended: "bg-stone-100 text-stone-600",
+    closed: "bg-bloom-50 text-bloom-600",
   };
   return (
-    <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold ${cls[status]}`}>
-      {status === "live" && <span className="size-1.5 rounded-full bg-brand-500" aria-hidden />}
+    <span className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-bold ${cls[status]}`}>
+      {status === "live" && <span className="size-1.5 rounded-full bg-sprout-600" aria-hidden />}
       {STATUS_LABEL[status]}
     </span>
   );
 }
 
 const btnBase =
-  "inline-flex items-center justify-center gap-1.5 rounded-xl font-semibold transition disabled:cursor-not-allowed disabled:opacity-50";
+  "inline-flex items-center justify-center gap-1.5 rounded-xl font-bold transition disabled:cursor-not-allowed disabled:opacity-50";
 
 export const btn = {
-  primary: `${btnBase} bg-brand-500 text-white hover:bg-brand-600 px-4 py-2.5`,
-  secondary: `${btnBase} border border-line bg-surface text-ink hover:bg-brand-50 px-3.5 py-2`,
-  ghost: `${btnBase} text-ink-muted hover:bg-black/5 hover:text-ink px-2.5 py-1.5 text-sm`,
-  danger: `${btnBase} text-red-700 hover:bg-red-50 px-2.5 py-1.5 text-sm`,
+  primary: `${btnBase} bg-brand-400 text-cocoa-900 shadow-[0_4px_12px_-4px_rgb(246_176_11/0.55)] hover:bg-brand-500 px-4 py-2.5`,
+  secondary: `${btnBase} border border-brand-200 bg-surface text-cocoa-700 hover:bg-brand-50 px-3.5 py-2`,
+  ghost: `${btnBase} font-semibold text-ink-muted hover:bg-brand-50 hover:text-cocoa-900 px-2.5 py-1.5 text-sm`,
+  danger: `${btnBase} font-semibold text-bloom-600 hover:bg-bloom-50 px-2.5 py-1.5 text-sm`,
+  stop: `${btnBase} bg-bloom-500 text-white hover:bg-bloom-600 px-4 py-2`,
 };
 
 export const inputCls =
-  "w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-base outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-200";
+  "w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-base outline-none transition placeholder:text-ink-muted/60 focus:border-brand-500 focus:ring-2 focus:ring-brand-200";
 
 /** 클립보드 복사. 실패하면 대상 요소의 텍스트를 선택해 수동 복사를 돕는다 */
 export async function copyText(text: string, fallbackEl?: HTMLElement | null): Promise<boolean> {
@@ -165,10 +180,10 @@ export function Modal({ open, onClose, title, children }: { open: boolean; onClo
 
 export function FullMessage({ title, body, action }: { title: string; body?: ReactNode; action?: ReactNode }) {
   return (
-    <main className="grid min-h-dvh place-items-center p-6">
+    <main className="warm-blobs grid min-h-dvh place-items-center p-6">
       <div className="max-w-md text-center">
         <div className="mb-6 flex justify-center">
-          <Logo />
+          <Logo size="lg" stacked />
         </div>
         <h1 className="text-xl font-bold">{title}</h1>
         {body && <div className="mt-2 text-ink-muted">{body}</div>}
@@ -176,6 +191,31 @@ export function FullMessage({ title, body, action }: { title: string; body?: Rea
       </div>
     </main>
   );
+}
+
+/** "방금 전", "2분 전", "3시간 전", 그 이상은 날짜 */
+export function relativeTime(ms: number | null, now = Date.now()): string {
+  if (!ms) return "방금 전";
+  const sec = Math.max(0, Math.round((now - ms) / 1000));
+  if (sec < 60) return "방금 전";
+  if (sec < 3600) return `${Math.floor(sec / 60)}분 전`;
+  if (sec < 86400) return `${Math.floor(sec / 3600)}시간 전`;
+  return timeLabel(ms);
+}
+
+/** 1분마다 다시 그려 상대 시간을 갱신 */
+export function useMinuteTick(): number {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 30_000);
+    return () => clearInterval(t);
+  }, []);
+  return now;
+}
+
+export function dateLabel(ms: number | null): string {
+  if (!ms) return "";
+  return new Date(ms).toLocaleDateString("ko-KR", { year: "numeric", month: "numeric", day: "numeric", weekday: "short" });
 }
 
 export function timeLabel(ms: number | null): string {

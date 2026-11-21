@@ -17,10 +17,10 @@ export function InstructorGate({ children }: { children: (user: User) => ReactNo
   if (user) return <>{children(user)}</>;
 
   return (
-    <main className="grid min-h-dvh place-items-center bg-gradient-to-b from-brand-50 to-canvas p-6">
-      <div className="w-full max-w-sm rounded-3xl border border-line bg-surface p-8 text-center shadow-sm">
+    <main className="grid min-h-dvh place-items-center warm-blobs p-6">
+      <div className="w-full max-w-sm card p-8 text-center">
         <div className="mb-6 flex justify-center">
-          <Logo size="lg" />
+          <Logo size="lg" stacked href={null} />
         </div>
         <h1 className="text-xl font-bold">강사 로그인</h1>
         <p className="mt-1 text-sm text-ink-muted">강의 공간을 만들고 자료를 공유하려면 로그인하세요.</p>
@@ -41,7 +41,7 @@ export function InstructorGate({ children }: { children: (user: User) => ReactNo
           <GoogleIcon /> Google 계정으로 로그인
         </button>
         {err && (
-          <p role="alert" className="mt-3 text-sm text-red-700">
+          <p role="alert" className="mt-3 text-sm text-bloom-600">
             {err}
           </p>
         )}
