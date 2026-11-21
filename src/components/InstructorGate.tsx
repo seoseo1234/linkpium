@@ -32,9 +32,9 @@ export function InstructorGate({ children }: { children: (user: User) => ReactNo
             try {
               await signIn();
             } catch (e) {
-              const code = (e as { code?: string }).code;
-              if (code !== "auth/popup-closed-by-user" && code !== "auth/cancelled-popup-request")
-                setErr(code === "auth/popup-blocked" ? "팝업이 차단되었습니다. 브라우저에서 팝업을 허용해 주세요." : "로그인하지 못했습니다. 다시 시도하세요.");
+              const code = (e as { code?: string }).code ?? "unknown";
+              console.error("[login]", e);
+              if (code !== "auth/popup-closed-by-user" && code !== "auth/cancelled-popup-request") setErr(loginErrorMessage(code));
             }
           }}
         >
@@ -49,6 +49,21 @@ export function InstructorGate({ children }: { children: (user: User) => ReactNo
       </div>
     </main>
   );
+}
+
+/** Firebase 로그인 오류 코드 → 안내 문구. 원인 파악을 위해 코드도 함께 표시 */
+function loginErrorMessage(code: string): string {
+  const host = typeof window !== "undefined" ? window.location.host : "";
+  const known: Record<string, string> = {
+    "auth/popup-blocked": "팝업이 차단되었습니다. 브라우저 주소창 오른쪽에서 팝업을 허용해 주세요.",
+    "auth/unauthorized-domain": `이 주소(${host})가 Firebase 승인된 도메인에 없습니다. Firebase 콘솔 → Authentication → 설정 → 승인된 도메인에 추가하세요.`,
+    "auth/operation-not-allowed": "Firebase에서 Google 로그인이 꺼져 있습니다. Authentication → 로그인 방법에서 Google을 사용 설정하세요.",
+    "auth/network-request-failed": "네트워크 연결을 확인한 뒤 다시 시도하세요.",
+    "auth/too-many-requests": "로그인 시도가 너무 많습니다. 잠시 후 다시 시도하세요.",
+    "auth/invalid-api-key": "Firebase API 키가 올바르지 않습니다. 환경변수 NEXT_PUBLIC_FIREBASE_API_KEY를 확인하세요.",
+    "auth/api-key-not-valid.-please-pass-a-valid-api-key.": "Firebase API 키가 올바르지 않습니다. 환경변수 NEXT_PUBLIC_FIREBASE_API_KEY를 확인하세요.",
+  };
+  return `${known[code] ?? "로그인하지 못했습니다. 다시 시도하세요."} (오류 코드: ${code})`;
 }
 
 function GoogleIcon() {
