@@ -27,7 +27,7 @@ export function Logo({ size = "md", href = "/", stacked = false }: { size?: "md"
       <Sprout className={sym} />
       <span className={`flex flex-col leading-none ${stacked ? "items-center" : ""}`}>
         <span className={word}>링크피움</span>
-        <span className={`${sub} mt-0.5 font-semibold text-cocoa-700`}>(LinkPium)</span>
+        <span className={`${sub} mt-0.5 font-semibold text-cocoa-700`}>(LinkPeum)</span>
       </span>
     </span>
   );

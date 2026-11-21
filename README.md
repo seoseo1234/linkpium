@@ -1,4 +1,4 @@
-# 링크피움 (LinkPium)
+# 링크피움 (LinkPeum)
 
 강의 중 링크·AI 프롬프트·공지를 참여자 노트북에 실시간으로 띄우는 자료 공유 보드. PRD: `링크피움_LinkPium_PRD.md`
 
@@ -20,7 +20,7 @@
 
 ### 1. Firebase 콘솔
 1. **Authentication → 로그인 방법 → Google** 사용 설정
-2. **Authentication → 설정 → 승인된 도메인**에 Vercel 도메인(예: `linkpium.vercel.app`)과 실제 도메인 추가 (`localhost`는 기본 포함)
+2. **Authentication → 설정 → 승인된 도메인**에 Vercel 도메인(예: `linkpeum.vercel.app`)과 실제 도메인 추가 (`localhost`는 기본 포함)
 3. **Firestore Database** 생성 (프로덕션 모드, 리전 `asia-northeast3` 서울 권장)
 4. **Firestore → 규칙**에 `firestore.rules` 내용을 붙여넣고 게시
    (또는 `npx firebase-tools deploy --only firestore:rules`)

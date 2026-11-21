@@ -1,8 +1,8 @@
 "use client";
 
 // 최근 입장 강의: 사용자가 동의한 경우에만 이 브라우저(localStorage)에 저장. 서버로 보내지 않음.
-const KEY = "linkpium:recent";
-const CONSENT = "linkpium:remember";
+const KEY = "linkpeum:recent";
+const CONSENT = "linkpeum:remember";
 const MAX = 5;
 
 export type RecentEntry = { token: string; title: string; at: number };
